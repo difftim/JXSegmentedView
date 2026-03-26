@@ -135,6 +135,13 @@ public protocol JXSegmentedViewDelegate: AnyObject {
     ///   - segmentedView: JXSegmentedView
     ///   - index: 目标index
     func segmentedView(_ segmentedView: JXSegmentedView, canClickItemAt index: Int) -> Bool
+
+    /// 长按item时调用
+    ///
+    /// - Parameters:
+    ///   - segmentedView: JXSegmentedView
+    ///   - index: 长按的index
+    func segmentedView(_ segmentedView: JXSegmentedView, didLongPressItemAt index: Int)
 }
 
 /// 提供JXSegmentedViewDelegate的默认实现，这样对于遵从JXSegmentedViewDelegate的类来说，所有代理方法都是可选实现的。
@@ -144,6 +151,7 @@ public extension JXSegmentedViewDelegate {
     func segmentedView(_ segmentedView: JXSegmentedView, didScrollSelectedItemAt index: Int) { }
     func segmentedView(_ segmentedView: JXSegmentedView, scrollingFrom leftIndex: Int, to rightIndex: Int, percent: CGFloat) { }
     func segmentedView(_ segmentedView: JXSegmentedView, canClickItemAt index: Int) -> Bool { return true }
+    func segmentedView(_ segmentedView: JXSegmentedView, didLongPressItemAt index: Int) { }
 }
 
 /// 内部会自己找到父UIViewController，然后将其automaticallyAdjustsScrollViewInsets设置为false，这一点请知晓。
@@ -239,6 +247,16 @@ open class JXSegmentedView: UIView, JXSegmentedViewRTLCompatible {
             segmentedView(horizontalFlipForView: collectionView)
         }
         addSubview(collectionView)
+
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+        collectionView.addGestureRecognizer(longPress)
+    }
+
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        let point = gesture.location(in: collectionView)
+        guard let indexPath = collectionView.indexPathForItem(at: point) else { return }
+        delegate?.segmentedView(self, didLongPressItemAt: indexPath.item)
     }
 
     open override func willMove(toSuperview newSuperview: UIView?) {
